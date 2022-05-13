@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import s from "./Ui.module.css";
 
 const Button = ({ onClick, children }) => (
@@ -8,3 +9,7 @@ const Button = ({ onClick, children }) => (
 );
 
 export default Button;
+
+Button.propTypes = {
+  onClick: PropTypes.func.isRequired,
+};

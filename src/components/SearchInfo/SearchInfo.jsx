@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import { useState, useEffect } from "react";
 import ImageGallery from "../ImageGallery";
 import ImageGalleryItem from "../ImageGalleryItem";
 import Button from "../UI/Button";
@@ -9,149 +10,112 @@ import { fetchImage } from "../services/fetchApi";
 import { FaGrinBeamSweat, FaHandMiddleFinger } from "react-icons/fa";
 import { TailSpin } from "react-loader-spinner";
 import ScrollToTop from "react-scroll-to-top";
+import PropTypes from "prop-types";
 import s from "./SearchInfo.module.css";
 
-class SearchInfo extends Component {
-  state = {
-    images: null,
-    error: null,
-    page: 1,
-    loading: true,
-    status: "idle",
-    showModal: false,
-    largeImage: "",
-    type: "",
-    tags: "",
+export default function SearchInfo({ imageName }) {
+  const [images, setImages] = useState([]);
+  const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState("idle");
+  const [showModal, setShowModal] = useState(false);
+  const [largeImage, setLargeImage] = useState("");
+  const [type, setType] = useState("");
+  const [tags, setTags] = useState("");
+
+  useEffect(() => {
+    if (!imageName) {
+      return;
+    }
+    fetchImage(imageName, page)
+      .then((data) => {
+        if (page === 1) {
+          setStatus("pending");
+          setImages(data.hits);
+          setStatus("resolved");
+        }
+        if (page !== 1) {
+          setImages((prevState) => [...prevState, ...data.hits]);
+          setStatus("resolved");
+          setLoading(false);
+        }
+      })
+      .catch((error) => {
+        setError(error);
+        setStatus("rejected");
+      })
+      .finally(setLoading(false));
+  }, [imageName, page]);
+
+  const handleLoadMore = () => {
+    setPage((prevState) => prevState + 1);
   };
 
-  componentDidUpdate(prevProps) {
-    const nextimageName = this.props.imageName;
-    const prevImageName = prevProps.imageName;
+  const handleGalleryItem = (fullImageUrl, tags, type) => {
+    setLargeImage(fullImageUrl);
+    setTags(tags);
+    setType(type);
+    setShowModal(true);
+  };
 
-    if (prevImageName !== nextimageName) {
-      this.resetPage();
-      this.setState({
-        status: "pending",
-        loading: true,
-      });
-      fetchImage(nextimageName)
-        .then((data) =>
-          this.setState({ images: data.hits, status: "resolved" })
-        )
-        .catch((error) => this.setState({ error, status: "rejected" }))
-        .finally(() => this.setState({ loading: false }));
-    }
+  const openModal = () => {
+    setShowModal(!showModal);
+  };
+
+  if (status === "idle") {
+    return (
+      <p className={s.textStatusIdle}>
+        <FaGrinBeamSweat size="30px" />
+        <span className={s.innerTextIdle}>please enter the name images</span>
+      </p>
+    );
   }
 
-  handleLoadMore = () => {
-    this.setState(
-      (prevState) => ({
-        page: prevState.page + 1,
-        loading: true,
-      }),
-      () => {
-        fetchImage(this.props.imageName, this.state.page).then((data) =>
-          this.setState((prevState) => {
-            return {
-              images: [...prevState.images, ...data.hits],
-              status: "resolved",
-              loading: false,
-            };
-          })
-        );
-      }
+  if (status === "pending") {
+    return <TailSpin height="50" width="50" color="grey" ariaLabel="loading" />;
+  }
+
+  if (status === "rejected" || images.length === 0) {
+    return (
+      <h1 className={s.textStatusReject}>
+        <FaHandMiddleFinger /> Oops... we don't have "{imageName}" in database
+      </h1>
     );
-  };
+  }
 
-  openModal = () => {
-    this.setState(({ showModal }) => ({
-      showModal: !showModal,
-    }));
-  };
+  if (status === "resolved") {
+    return (
+      <>
+        {showModal && (
+          <Modal
+            type={type}
+            tag={tags}
+            largeImage={largeImage}
+            onClose={openModal}
+          />
+        )}
 
-  handleGalleryItem = (fullImageUrl, tags, type) => {
-    this.setState({
-      largeImage: fullImageUrl,
-      tags: tags,
-      type: type,
-      showModal: true,
-    });
-  };
-
-  scrollOnLoadButton = () => {
-    window.scrollTo({
-      top: document.documentElement.scrollHeight,
-      behavior: "smooth",
-    });
-  };
-
-  resetPage = () => {
-    this.setState({
-      page: 1,
-    });
-  };
-
-  render() {
-    const { images, loading, status, showModal, largeImage, tags, type } =
-      this.state;
-
-    if (status === "idle") {
-      return (
-        <p className={s.textStatusIdle}>
-          <FaGrinBeamSweat size="30px" />
-          <span className={s.innerTextIdle}>please enter the name images</span>
-        </p>
-      );
-    }
-
-    if (status === "pending") {
-      return (
-        <TailSpin height="50" width="50" color="grey" ariaLabel="loading" />
-      );
-    }
-
-    if (status === "rejected" || images.length === 0) {
-      return (
-        <h1 className={s.textStatusReject}>
-          <FaHandMiddleFinger /> Oops... we don't have "{this.props.imageName}"
-          in database
-        </h1>
-      );
-    }
-
-    if (status === "resolved") {
-      return (
-        <>
-          {showModal && (
-            <Modal
-              type={type}
-              tag={tags}
-              largeImage={largeImage}
-              onClose={this.openModal}
+        <ImageGallery>
+          {images.map((image) => (
+            <ImageGalleryItem
+              onImageClick={handleGalleryItem}
+              key={image.id}
+              data={image}
             />
-          )}
+          ))}
+        </ImageGallery>
 
-          <ImageGallery>
-            {images.map((image) => (
-              <ImageGalleryItem
-                onImageClick={this.handleGalleryItem}
-                key={image.id}
-                data={image}
-              />
-            ))}
-          </ImageGallery>
+        <Container>
+          <Button onClick={handleLoadMore}>{loading && <Loader />}</Button>
+        </Container>
 
-          <Container>
-            <Button onClick={this.handleLoadMore}>
-              {loading && <Loader />}
-            </Button>
-          </Container>
-
-          <ScrollToTop smooth />
-        </>
-      );
-    }
+        <ScrollToTop smooth />
+      </>
+    );
   }
 }
 
-export default SearchInfo;
+SearchInfo.propTypes = {
+  imageName: PropTypes.string.isRequired,
+};

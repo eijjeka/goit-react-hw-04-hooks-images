@@ -1,51 +1,41 @@
-import React, { Component } from "react";
+import { useState } from "react";
 import { toast } from "react-toastify";
 import { BsSearch } from "react-icons/bs";
 import "react-toastify/dist/ReactToastify.css";
 import s from "./Form.module.css";
 
-class Form extends Component {
-  state = {
-    imageName: "",
-  };
+export default function Form({ onFormSubmit }) {
+  const [imageName, setImageName] = useState("");
 
-  handleChangeInput = (e) => {
-    this.setState({ imageName: e.currentTarget.value.toLowerCase() });
-  };
-
-  handleSubmit = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (this.state.imageName.trim() === "") {
+    if (imageName.trim() === "") {
       toast.error("🦄 Please enter the name!");
       return;
     }
 
-    this.props.onFormSubmit(this.state.imageName);
-    this.setState({ imageName: "" });
+    onFormSubmit(imageName);
+    setImageName("");
   };
 
-  render() {
-    return (
-      <header className={s.searchbar}>
-        <form className={s.searchForm} onSubmit={this.handleSubmit}>
-          <button type="submit" className={s.searchFormButton}>
-            <BsSearch size="20px" />
-            <span className={s.searchFormButtonLabel}></span>
-          </button>
+  return (
+    <header className={s.searchbar}>
+      <form className={s.searchForm} onSubmit={handleSubmit}>
+        <button type="submit" className={s.searchFormButton}>
+          <BsSearch size="20px" />
+          <span className={s.searchFormButtonLabel}></span>
+        </button>
 
-          <input
-            onChange={this.handleChangeInput}
-            className={s.searchFormInput}
-            type="text"
-            autoComplete="off"
-            autoFocus
-            placeholder="Search images and photos"
-          />
-        </form>
-      </header>
-    );
-  }
+        <input
+          onChange={(e) => setImageName(e.currentTarget.value.toLowerCase())}
+          className={s.searchFormInput}
+          type="text"
+          autoComplete="off"
+          autoFocus
+          placeholder="Search images and photos"
+        />
+      </form>
+    </header>
+  );
 }
-
-export default Form;
