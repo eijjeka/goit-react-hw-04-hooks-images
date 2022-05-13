@@ -14,7 +14,7 @@ import PropTypes from "prop-types";
 import s from "./SearchInfo.module.css";
 
 export default function SearchInfo({ imageName }) {
-  const [images, setImages] = useState([]);
+  const [images, setImages] = useState(null);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
